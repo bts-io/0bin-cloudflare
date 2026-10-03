@@ -1,15 +1,21 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Panel } from "../Panel";
+import { useCanCreate } from "./useCanCreate";
 
 /** Visible keyboard focus for the view page's own buttons and links. */
 export const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
-export const newPasteNav = (
-  <Link to="/" className={`hover:text-ink ${FOCUS}`}>
-    new paste
-  </Link>
-);
+/** Header link to the create page, shown only to people who can create (see useCanCreate). */
+export function NewPasteNav() {
+  const canCreate = useCanCreate();
+  if (!canCreate) return null;
+  return (
+    <Link to="/" className={`hover:text-ink ${FOCUS}`}>
+      new paste
+    </Link>
+  );
+}
 
 /** One boxed message: loading, missing key, wrong key, not found. `alert` announces failures right away. */
 export function Message({

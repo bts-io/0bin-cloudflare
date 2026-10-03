@@ -12,6 +12,7 @@ import { CodeBlock } from "./CodeBlock";
 import { FilePreview } from "./FilePreview";
 import { FOCUS } from "./Message";
 import { useBlobUrl } from "./useBlobUrl";
+import { useCanCreate } from "./useCanCreate";
 import { useHighlight } from "./useHighlight";
 
 export interface OpenedPaste extends DecryptedPaste {
@@ -33,6 +34,7 @@ export function PasteView({ id, paste }: { id: string; paste: OpenedPaste }) {
   const highlighted = useHighlight(text, body.length, header.lang);
   // Downloads are always octet-stream: a Blob URL shares this page's origin, so it must never render as HTML.
   const downloadUrl = useBlobUrl(text ?? body, "application/octet-stream");
+  const canCreate = useCanCreate();
   const [wrap, setWrap] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [status, setStatus] = useState("");
@@ -131,14 +133,11 @@ export function PasteView({ id, paste }: { id: string; paste: OpenedPaste }) {
             <Button className={FOCUS} disabled={!downloadUrl} onClick={download}>
               download
             </Button>
-            {text !== null && (
+            {text !== null && canCreate && (
               <Button className={FOCUS} onClick={clone}>
                 clone
               </Button>
             )}
-            <Button className={FOCUS} onClick={() => navigate({ to: "/" })}>
-              new paste
-            </Button>
             {ownerToken && !confirmDelete && (
               <Button variant="danger" className={FOCUS} onClick={() => setConfirmDelete(true)}>
                 delete

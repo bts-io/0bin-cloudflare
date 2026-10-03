@@ -5,7 +5,7 @@ import { findHistory, forgetHistory } from "../../lib/history";
 import { isPasteId, parseKey, viewFailure } from "../../lib/view";
 import { Button } from "../Button";
 import { Shell } from "../Shell";
-import { FOCUS, Message, newPasteNav } from "./Message";
+import { FOCUS, Message, NewPasteNav } from "./Message";
 import { NotFound } from "./NotFound";
 import { type OpenedPaste, PasteView } from "./PasteView";
 
@@ -86,7 +86,7 @@ export function ViewPage({ id }: { id: string }) {
   if (state.name === "not-found") return <NotFound />;
 
   return (
-    <Shell nav={newPasteNav}>
+    <Shell nav={<NewPasteNav />}>
       {state.name === "loading" && (
         <Message label="0bin">
           <p className="text-muted">loading paste</p>

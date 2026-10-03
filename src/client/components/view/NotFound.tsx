@@ -1,5 +1,5 @@
 import { Shell } from "../Shell";
-import { Message, newPasteNav } from "./Message";
+import { Message, NewPasteNav } from "./Message";
 
 /**
  * The single not-found page (spec 8.4): missing, expired, already burned and wrong token all look the same, and
@@ -7,7 +7,7 @@ import { Message, newPasteNav } from "./Message";
  */
 export function NotFound() {
   return (
-    <Shell nav={newPasteNav}>
+    <Shell nav={<NewPasteNav />}>
       <Message label="not found" role="alert">
         <h1 className="text-ink">this paste does not exist, has expired, or has already been read.</h1>
       </Message>
