@@ -37,6 +37,7 @@ It is a modern rewrite of [0bin](https://github.com/Tygs/0bin) (Python, no longe
 | **Files and images** | Any file type; drop it on the page or paste a screenshot straight from the clipboard; images preview inline |
 | **Your pastes, your control** | Your browser keeps an owner token: reopen your own burn paste without burning it, delete any of your pastes |
 | **Admin page** | Stats, list, delete by link or id, purge expired now |
+| **Bot check** | Cloudflare Turnstile on create, invisible and opt-in: on only when the secret is set |
 | **Locked down** | Per-request CSP nonce on every script, `no-referrer`, HSTS, rate-limited create, three create modes |
 | **Light and dark** | A terminal look in both, following your system theme |
 
@@ -104,6 +105,8 @@ bun run deploy                                 # D1 migrations, build, wrangler 
 | `token` | whoever has the team key (`CREATE_TOKEN`), entered once on the create page and kept in that browser |
 
 The admin API and page need `Authorization: Bearer <ADMIN_TOKEN>`; without the secret they do not exist. Running `open` on the public internet means content you cannot moderate (it is all encrypted), so prefer `token` unless you keep an eye on it.
+
+**Turnstile.** A bot check on create, on top of the per-IP limit. Put the widget's public site key in the `TURNSTILE_SITE_KEY` var in `wrangler.jsonc` (`""` means off) and set its secret with `bunx wrangler secret put TURNSTILE_SECRET_KEY`. With the secret set, every create must carry a valid token (403 otherwise); without it, create works as before. Only the create page's CSP allows `challenges.cloudflare.com`.
 
 ## Develop
 

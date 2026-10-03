@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { ApiError } from "../../src/client/lib/api";
+import { ApiError, turnstileHeaders } from "../../src/client/lib/api";
 import {
+  BOT_CHECK_MESSAGE,
   canSubmit,
   clampFileName,
   createErrorMessage,
@@ -18,6 +19,7 @@ import {
   toPasteInput,
 } from "../../src/client/lib/create";
 import { formatBytes } from "../../src/client/lib/format";
+import { BotCheckError } from "../../src/client/lib/turnstile";
 import { EXPIRIES, MAX_INFLATED_BYTES, PasteCryptoError } from "../../src/shared/crypto";
 import { MAX_CIPHERTEXT_BYTES } from "../../src/shared/schemas/paste";
 
@@ -164,6 +166,18 @@ describe("error messages", () => {
     expect(createErrorMessage(new ApiError(400, "invalid_request"))).toMatch(/invalid/);
     expect(createErrorMessage(new ApiError(429, "rate_limited"))).toMatch(/Too many/);
     expect(createErrorMessage(new ApiError(500, "unknown"))).toMatch(/error 500/);
+  });
+
+  it("maps a failed bot check, from the widget or the server, to one message", () => {
+    expect(createErrorMessage(new BotCheckError())).toBe(BOT_CHECK_MESSAGE);
+    expect(createErrorMessage(new ApiError(403, "turnstile_failed"))).toBe(BOT_CHECK_MESSAGE);
+    expect(createErrorMessage(new ApiError(403, "forbidden"))).toMatch(/error 403/);
+    expect(BOT_CHECK_MESSAGE).toBe("The bot check failed, try again.");
+  });
+
+  it("sends the Turnstile token as a header only when there is one", () => {
+    expect(turnstileHeaders("tok")).toEqual({ "x-turnstile-token": "tok" });
+    expect(turnstileHeaders(null)).toEqual({});
   });
 
   it("maps network and crypto failures", () => {

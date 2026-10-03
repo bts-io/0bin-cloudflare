@@ -14,6 +14,7 @@ import { MAX_CIPHERTEXT_BYTES } from "../../shared/schemas/paste";
 import { ApiError } from "./api";
 import { formatBytes } from "./format";
 import { LANGUAGES } from "./languages";
+import { BotCheckError } from "./turnstile";
 
 export const DEFAULT_EXPIRY: Expiry = "1d";
 
@@ -143,9 +144,13 @@ export function parseClonePrefill(raw: string | null): ClonePrefill | null {
 
 export const TOO_LARGE_MESSAGE = `This paste is too large: it must fit in ${formatBytes(MAX_CIPHERTEXT_BYTES)} after compression and encryption.`;
 
+export const BOT_CHECK_MESSAGE = "The bot check failed, try again.";
+
 /** One plain sentence per failure, for the inline error line. */
 export function createErrorMessage(err: unknown): string {
+  if (err instanceof BotCheckError) return BOT_CHECK_MESSAGE;
   if (err instanceof ApiError) {
+    if (err.status === 403 && err.code === "turnstile_failed") return BOT_CHECK_MESSAGE;
     switch (err.status) {
       case 404:
         return "Creating pastes is disabled on this server.";

@@ -37,5 +37,7 @@
   // lets anyone in (rate limited per IP), "token" requires `Authorization: Bearer <CREATE_TOKEN>` (secret; unset
   // means 401 for everyone). /api/admin/* always requires `Authorization: Bearer <ADMIN_TOKEN>` (secret); without
   // ADMIN_TOKEN the admin API answers 404.
-  "vars": { "CREATE_MODE": "open" }
+  // TURNSTILE_SITE_KEY is the public Turnstile site key for the create page ("" = off); create only checks
+  // tokens when the TURNSTILE_SECRET_KEY secret is set.
+  "vars": { "CREATE_MODE": "open", "TURNSTILE_SITE_KEY": "0x4AAAAAAFNFBD42yqXg9qvl" }
 }

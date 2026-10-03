@@ -10,6 +10,7 @@ import { createGate } from "../lib/auth";
 import { fail, notFound } from "../lib/http";
 import { createRateLimit } from "../lib/rate-limit";
 import { decodedLength, randomB64u, sha256Hex, versionByte } from "../lib/tokens";
+import { turnstileCheck } from "../lib/turnstile";
 
 const MAX_BODY_BYTES = 1_500_000;
 /** Fresh ids tried after a primary-key collision before the create fails. */
@@ -51,6 +52,7 @@ export const pasteRoutes = new Hono<{ Bindings: Env }>()
   .post(
     "/",
     createRateLimit,
+    turnstileCheck,
     bodyLimit({
       maxSize: MAX_BODY_BYTES,
       onError: (c) => fail(c, 413, "payload_too_large", "Request body is too large"),

@@ -17,10 +17,15 @@ export function createNonce() {
   return btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
 }
 
-const contentSecurityPolicy = (nonce: string) =>
-  [
+/** Where the Turnstile script and its challenge iframe come from; only the create page allows it. */
+const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
+
+const contentSecurityPolicy = (nonce: string, turnstile: boolean) => {
+  const extra = turnstile ? ` ${TURNSTILE_ORIGIN}` : "";
+  return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}'`,
+    `script-src 'self' 'nonce-${nonce}'${extra}`,
+    ...(turnstile ? [`frame-src ${TURNSTILE_ORIGIN}`] : []),
     "style-src 'self'",
     "img-src 'self' blob: data:",
     "connect-src 'self'",
@@ -29,12 +34,16 @@ const contentSecurityPolicy = (nonce: string) =>
     "form-action 'self'",
     "object-src 'none'",
   ].join("; ");
+};
 
-/** Copies `response` with the base headers, plus the CSP for HTML documents rendered with `nonce`. */
-export function withSecurityHeaders(response: Response, nonce?: string) {
+/**
+ * Copies `response` with the base headers, plus the CSP for HTML documents rendered with `nonce`. `turnstile`
+ * widens the CSP for the Turnstile widget (the create page).
+ */
+export function withSecurityHeaders(response: Response, nonce?: string, turnstile = false) {
   const res = new Response(response.body, response);
   for (const [name, value] of Object.entries(BASE_HEADERS)) res.headers.set(name, value);
   if (nonce && res.headers.get("content-type")?.includes("text/html"))
-    res.headers.set("Content-Security-Policy", contentSecurityPolicy(nonce));
+    res.headers.set("Content-Security-Policy", contentSecurityPolicy(nonce, turnstile));
   return res;
 }

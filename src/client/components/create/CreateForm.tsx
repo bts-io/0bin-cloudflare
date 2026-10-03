@@ -1,6 +1,7 @@
 import { type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import { buildCreateRequest, type Expiry, encryptPaste, HEADER_LIMITS } from "../../../shared/crypto";
-import { ApiError, createPaste } from "../../lib/api";
+import type { CreatePasteResponse } from "../../../shared/schemas/paste";
+import { ApiError, createPaste, getConfig } from "../../lib/api";
 import { CLONE_KEY } from "../../lib/clone";
 import {
   canSubmit,
@@ -20,6 +21,7 @@ import { formatBytes } from "../../lib/format";
 import { addHistory } from "../../lib/history";
 import { LANGUAGES } from "../../lib/languages";
 import { clearTeamKey, getTeamKey, setTeamKey } from "../../lib/team-key";
+import { type BotCheck, createBotCheck } from "../../lib/turnstile";
 import { Button } from "../Button";
 import { Panel } from "../Panel";
 import { FileCard } from "./FileCard";
@@ -50,6 +52,21 @@ export function CreateForm() {
   const ids = useId();
   const busyRef = useRef(false);
   busyRef.current = busy !== null;
+  const botBoxRef = useRef<HTMLDivElement>(null);
+  // Resolves to the Turnstile widget, or null when the server has no site key; a failed config fetch is retried.
+  const botCheckRef = useRef<Promise<BotCheck | null> | null>(null);
+
+  const ensureBotCheck = () => {
+    if (botCheckRef.current) return botCheckRef.current;
+    const ready = getConfig().then(({ turnstileSiteKey }) =>
+      turnstileSiteKey && botBoxRef.current ? createBotCheck(botBoxRef.current, turnstileSiteKey) : null,
+    );
+    ready.catch(() => {
+      if (botCheckRef.current === ready) botCheckRef.current = null;
+    });
+    botCheckRef.current = ready;
+    return ready;
+  };
 
   const attach = async (picked: File, fromClipboard = false) => {
     if (busyRef.current) return;
@@ -67,6 +84,17 @@ export function CreateForm() {
       setBusy(null);
     }
   };
+
+  // Turnstile: fetch the site key and load the widget up front, so the check is quick on submit.
+  useEffect(() => {
+    ensureBotCheck()
+      .then((check) => check?.prepare())
+      .catch(() => {});
+    return () => {
+      botCheckRef.current?.then((check) => check?.remove()).catch(() => {});
+      botCheckRef.current = null;
+    };
+  }, []);
 
   // Clone prefill: read once, then clear so a reload starts empty.
   useEffect(() => {
@@ -145,7 +173,14 @@ export function CreateForm() {
       }
       const request = buildCreateRequest(paste, { expiry, burn });
       setBusy("sending");
-      const created = await createPaste(request);
+      const botCheck = await ensureBotCheck();
+      let created: CreatePasteResponse;
+      try {
+        created = await createPaste(request, botCheck ? await botCheck.token() : null);
+      } finally {
+        // Turnstile tokens are single use: a retry needs a fresh challenge.
+        botCheck?.reset();
+      }
       addHistory({
         id: created.id,
         ikm: paste.ikm,
@@ -302,6 +337,7 @@ export function CreateForm() {
           </div>
         </Panel>
 
+        <div ref={botBoxRef} />
         <p aria-live="polite" className="sr-only">
           {busy ? BUSY_TEXT[busy] : ""}
         </p>

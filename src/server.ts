@@ -11,12 +11,13 @@ import { createNonce, withSecurityHeaders } from "./worker/lib/security-headers"
 const entry = createServerEntry({
   async fetch(request: Request, ...rest: unknown[]) {
     const [env, ctx] = rest as [Env, ExecutionContext];
-    if (isWorkerOwned(new URL(request.url).pathname))
-      return withSecurityHeaders(await worker.fetch(request, env, ctx));
+    const { pathname } = new URL(request.url);
+    if (isWorkerOwned(pathname)) return withSecurityHeaders(await worker.fetch(request, env, ctx));
     // The router reads the nonce from the request context (src/client/router.tsx) and stamps every inline script.
     const nonce = createNonce();
     const res = await startHandler.fetch(request, { responseLinkHeader: true, context: { nonce } });
-    return withSecurityHeaders(res, nonce);
+    // Only the create page loads Turnstile, so only it may load Cloudflare's script and challenge frame.
+    return withSecurityHeaders(res, nonce, pathname === "/");
   },
 });
 

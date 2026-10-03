@@ -3,6 +3,7 @@
  * and every failure becomes an ApiError carrying the status and the server's error code.
  */
 import type { z } from "zod";
+import { PublicConfig } from "../../shared/schemas/config";
 import { type CreatePasteBody, CreatePasteResponse, PasteMeta, PasteRead } from "../../shared/schemas/paste";
 import { Stats } from "../../shared/schemas/stats";
 import { teamKeyHeaders } from "./team-key";
@@ -39,10 +40,14 @@ const tokenHeaders = (t: { readToken?: string; ownerToken?: string }) => ({
   ...(t.ownerToken && { "x-owner-token": t.ownerToken }),
 });
 
-export const createPaste = (body: CreatePasteBody) =>
+/** The Turnstile token travels as a header, so the paste body schema stays strict. */
+export const turnstileHeaders = (token: string | null): Record<string, string> =>
+  token ? { "x-turnstile-token": token } : {};
+
+export const createPaste = (body: CreatePasteBody, turnstileToken: string | null) =>
   call(CreatePasteResponse, "/api/pastes", {
     method: "POST",
-    headers: { "content-type": "application/json", ...teamKeyHeaders() },
+    headers: { "content-type": "application/json", ...teamKeyHeaders(), ...turnstileHeaders(turnstileToken) },
     body: JSON.stringify(body),
   });
 
@@ -57,5 +62,7 @@ export async function deletePaste(id: string, ownerToken: string): Promise<void>
   const res = await fetch(`/api/pastes/${id}`, { method: "DELETE", headers: tokenHeaders({ ownerToken }) });
   if (res.status !== 204) throw new ApiError(res.status, "delete_failed");
 }
+
+export const getConfig = () => call(PublicConfig, "/api/config");
 
 export const getStats = () => call(Stats, "/api/stats", { headers: teamKeyHeaders() });

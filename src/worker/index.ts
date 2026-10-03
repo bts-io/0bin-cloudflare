@@ -4,6 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { getDb } from "./db";
 import { fail, notFound } from "./lib/http";
 import { adminRoutes } from "./routes/admin";
+import { configRoutes } from "./routes/config";
 import { pasteRoutes } from "./routes/pastes";
 import { statsRoutes } from "./routes/stats";
 
@@ -19,6 +20,7 @@ app.get("/api/health", async (c) => {
   }
 });
 
+app.route("/api/config", configRoutes);
 app.route("/api/pastes", pasteRoutes);
 app.route("/api/stats", statsRoutes);
 app.route("/api/admin", adminRoutes);
