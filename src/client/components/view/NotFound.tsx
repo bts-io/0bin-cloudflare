@@ -1,5 +1,5 @@
-import { Shell } from "../Shell";
-import { Message, NewPasteNav } from "./Message";
+import { Message } from "./Message";
+import { ViewShell } from "./ViewShell";
 
 /**
  * The single not-found page (spec 8.4): missing, expired, already burned and wrong token all look the same, and
@@ -7,10 +7,10 @@ import { Message, NewPasteNav } from "./Message";
  */
 export function NotFound() {
   return (
-    <Shell nav={<NewPasteNav />}>
+    <ViewShell>
       <Message label="not found" role="alert">
         <h1 className="text-ink">this paste does not exist, has expired, or has already been read.</h1>
       </Message>
-    </Shell>
+    </ViewShell>
   );
 }

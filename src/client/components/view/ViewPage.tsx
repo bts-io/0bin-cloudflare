@@ -4,10 +4,10 @@ import { getMeta, getPaste } from "../../lib/api";
 import { findHistory, forgetHistory } from "../../lib/history";
 import { isPasteId, parseKey, viewFailure } from "../../lib/view";
 import { Button } from "../Button";
-import { Shell } from "../Shell";
-import { FOCUS, Message, NewPasteNav } from "./Message";
+import { FOCUS, Message } from "./Message";
 import { NotFound } from "./NotFound";
 import { type OpenedPaste, PasteView } from "./PasteView";
+import { ViewShell } from "./ViewShell";
 
 type State =
   | { name: "loading" }
@@ -86,7 +86,7 @@ export function ViewPage({ id }: { id: string }) {
   if (state.name === "not-found") return <NotFound />;
 
   return (
-    <Shell nav={<NewPasteNav />}>
+    <ViewShell>
       {state.name === "loading" && (
         <Message label="0bin">
           <p className="text-muted">loading paste</p>
@@ -129,6 +129,6 @@ export function ViewPage({ id }: { id: string }) {
         </Message>
       )}
       {state.name === "open" && <PasteView id={id} paste={state.paste} />}
-    </Shell>
+    </ViewShell>
   );
 }
