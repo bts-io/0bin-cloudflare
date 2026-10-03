@@ -41,5 +41,5 @@
   // other mode `Authorization: Bearer <ADMIN_TOKEN>` (secret), and without ADMIN_TOKEN the admin API answers 404.
   // This instance runs "token" (a shared team key) until Zero Trust is set up; then "access" with the two
   // ACCESS_* values filled in.
-  "vars": { "CREATE_MODE": "token", "ACCESS_TEAM_DOMAIN": "", "ACCESS_AUD": "", "ADMIN_EMAILS": "" }
+  "vars": { "CREATE_MODE": "open", "ACCESS_TEAM_DOMAIN": "", "ACCESS_AUD": "", "ADMIN_EMAILS": "" }
 }
