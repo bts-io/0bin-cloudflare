@@ -1,0 +1,59 @@
+# Deploy to Cloudflare on push to main: install, build, then `bun run deploy` (apply D1 migrations to the remote
+# database, build, wrangler deploy), then a smoke check against the live Worker. There is no dashboard git
+# integration for Forgejo, so this workflow is the only deploy path.
+#
+# D1 migrations ARE applied here: `bun run deploy` runs `db:migrate:remote` first, so a migration committed in
+# migrations/ reaches the remote database before the code that needs it. The separate Build step runs first so
+# a broken build fails before any migration is applied.
+# CLOUDFLARE_API_TOKEN (secret) and CLOUDFLARE_ACCOUNT_ID (variable) are set at org level.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: docker
+    container:
+      image: node:22-bookworm
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    env:
+      WORKER_URL: https://paste.borderless-tech.com
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: https://data.forgejo.org/actions/checkout@v4
+      - uses: https://github.com/oven-sh/setup-bun@v2
+        with:
+          # Same Bun that wrote bun.lock, so --frozen-lockfile agrees with it.
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: Build
+        run: bun run build
+      - name: Deploy (D1 migrations, build, wrangler deploy)
+        # Cloudflare shows API-token deploys as "unknown / manual"; the version tag and message say where
+        # each one came from (commit, run, author, subject) in the dashboard's Deployments list. The extra
+        # arguments land on the last command of the script, `wrangler deploy`.
+        run: |
+          short="${GITHUB_SHA:0:12}"
+          subject=$(git log -1 --format=%s | cut -c1-60)
+          author=$(git log -1 --format=%an)
+          bun run deploy -- --tag "$short" --message "forgejo run ${{ github.run_number }} by $author: $subject"
+      - name: Smoke check (live / and /api/health)
+        run: |
+          for i in $(seq 1 24); do
+            home=$(curl -s -o /dev/null -w '%{http_code}' "$WORKER_URL/" || true)
+            health=$(curl -s -o /dev/null -w '%{http_code}' "$WORKER_URL/api/health" || true)
+            [ "$home" = 200 ] && [ "$health" = 200 ] && { echo "live: / -> $home, /api/health -> $health"; exit 0; }
+            sleep 5
+          done
+          echo "live Worker is not healthy: / -> $home, /api/health -> $health"; exit 1

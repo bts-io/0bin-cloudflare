@@ -1,0 +1,77 @@
+@import "tailwindcss";
+@import "@fontsource-variable/jetbrains-mono";
+
+/*
+ * Terminal look (picked on #1, mock-up B): one mono face, boxed panels, a green-to-cyan gradient. Colours are
+ * CSS variables so light and dark swap in one place; components only use the Tailwind names below
+ * (bg-surface, text-muted, border-line, text-accent, ...).
+ */
+@theme {
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: var(--font-mono);
+
+  --color-page: var(--c-page);
+  --color-surface: var(--c-surface);
+  --color-line: var(--c-line);
+  --color-ink: var(--c-ink);
+  --color-body: var(--c-body);
+  --color-muted: var(--c-muted);
+  --color-faint: var(--c-faint);
+  --color-accent: var(--c-accent);
+  --color-accent-2: var(--c-accent-2);
+  --color-warn: var(--c-warn);
+  --color-danger: var(--c-danger);
+}
+
+/* Light: darker green and cyan so text in them keeps a 4.5:1 contrast on white. */
+:root {
+  --c-page: #f6f8f7;
+  --c-surface: #ffffff;
+  --c-line: #d5ddd8;
+  --c-ink: #0b1410;
+  --c-body: #1f2a24;
+  --c-muted: #56616a;
+  --c-faint: #7b858d;
+  --c-accent: #137a00;
+  --c-accent-2: #00788a;
+  --c-warn: #9a5200;
+  --c-danger: #c62828;
+  --c-grad-from: #1a9e00;
+  --c-grad-to: #0090a8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-page: #07090a;
+    --c-surface: #0b0f0d;
+    --c-line: #1f2a24;
+    --c-ink: #e6edf3;
+    --c-body: #c9d1d9;
+    --c-muted: #7d8590;
+    --c-faint: #4d5560;
+    --c-accent: #39ff14;
+    --c-accent-2: #00e5ff;
+    --c-warn: #ffb86b;
+    --c-danger: #f85149;
+    --c-grad-from: #39ff14;
+    --c-grad-to: #00e5ff;
+  }
+}
+
+@layer base {
+  html {
+    /* Native form controls and scrollbars follow the visitor's theme. */
+    color-scheme: light dark;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@utility bg-grad {
+  background-image: linear-gradient(90deg, var(--c-grad-from), var(--c-grad-to));
+}
+
+@utility text-grad {
+  background-image: linear-gradient(90deg, var(--c-grad-from), var(--c-grad-to));
+  background-clip: text;
+  color: transparent;
+}

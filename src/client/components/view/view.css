@@ -1,0 +1,102 @@
+/*
+ * View page only: line numbers and highlight.js token colours on the theme variables from styles.css, so light
+ * and dark follow automatically. Loaded as a stylesheet link by the /p/$id route (the CSP forbids inline styles).
+ */
+
+/* Each line is a table row: the gutter sizes itself to the widest number and stays aligned when lines wrap.
+   Numbers come from a CSS counter, so selecting and copying the code never picks them up. */
+.code-lines {
+  display: table;
+  min-width: 100%;
+  counter-reset: line;
+}
+
+.code-line {
+  display: table-row;
+  counter-increment: line;
+}
+
+.code-line::before {
+  content: counter(line);
+  display: table-cell;
+  padding-right: 1rem;
+  text-align: right;
+  color: var(--c-faint);
+  user-select: none;
+}
+
+.code-text {
+  display: table-cell;
+  white-space: pre;
+}
+
+.code-wrap .code-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--c-faint);
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-section,
+.hljs-name,
+.hljs-tag,
+.hljs-type {
+  color: var(--c-accent-2);
+}
+
+.hljs-attribute,
+.hljs-attr,
+.hljs-built_in,
+.hljs-property,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-addition {
+  color: var(--c-accent);
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-char,
+.hljs-link,
+.hljs-symbol,
+.hljs-template-variable {
+  color: var(--c-ink);
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-meta,
+.hljs-bullet,
+.hljs-variable.constant_ {
+  color: var(--c-warn);
+}
+
+.hljs-title,
+.hljs-function {
+  color: var(--c-ink);
+  font-weight: 600;
+}
+
+.hljs-params,
+.hljs-variable,
+.hljs-subst {
+  color: var(--c-body);
+}
+
+.hljs-deletion {
+  color: var(--c-danger);
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: 700;
+}

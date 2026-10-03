@@ -1,0 +1,45 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "0bin-cloudflare",
+  "main": "./src/server.ts",
+  // Pinned to the workerd bundled with @cloudflare/vitest-pool-workers, or the integration tests refuse to start.
+  "compatibility_date": "2026-08-22",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "routes": [{ "pattern": "paste.borderless-tech.com", "custom_domain": true }],
+  "observability": { "enabled": true, "logs": { "invocation_logs": true } },
+  "upload_source_maps": true,
+
+  // Client bundle comes from Workers Static Assets; every page is server-rendered and /api/* is Hono.
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "run_worker_first": ["/*", "!/assets/*"]
+  },
+
+  // Migrations are applied by `bun run deploy` before the new code goes live.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "0bin-cloudflare-db",
+      "database_id": "c6acfaac-ba3e-4283-88ff-744aa83c483d",
+      "migrations_dir": "./migrations"
+    }
+  ],
+
+  // Hourly purge of expired pastes (src/server.ts scheduled).
+  "triggers": { "crons": ["17 * * * *"] },
+
+  // Create brake (spec 7.2): 10 creates per 60 s per Access email, or per client IP outside access mode.
+  "ratelimits": [{ "name": "CREATE_LIMITER", "namespace_id": "5001", "simple": { "limit": 10, "period": 60 } }],
+
+  // CREATE_MODE gates POST /api/pastes and GET /api/stats: "off" answers 404, "open" lets anyone in, "access"
+  // requires a Cloudflare Access JWT checked against ACCESS_TEAM_DOMAIN (https://<team>.cloudflareaccess.com)
+  // and ACCESS_AUD; either one empty in "access" mode means 401 for everyone. "token" requires
+  // `Authorization: Bearer <CREATE_TOKEN>` (secret; unset means 401 for everyone).
+  // /api/admin/*: in "access" mode the Access JWT, limited to ADMIN_EMAILS (comma list) when that is set; in any
+  // other mode `Authorization: Bearer <ADMIN_TOKEN>` (secret), and without ADMIN_TOKEN the admin API answers 404.
+  // This instance runs "token" (a shared team key) until Zero Trust is set up; then "access" with the two
+  // ACCESS_* values filled in.
+  "vars": { "CREATE_MODE": "token", "ACCESS_TEAM_DOMAIN": "", "ACCESS_AUD": "", "ADMIN_EMAILS": "" }
+}

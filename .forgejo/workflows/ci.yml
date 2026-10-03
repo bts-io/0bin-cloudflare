@@ -1,0 +1,68 @@
+# Lint the commit messages (and the PR title) against Conventional Commits, then lint, typecheck and test on
+# every push to main and every pull request. Runs on our own Forgejo runners. The job container is
+# node:22-bookworm: checkout is a JavaScript action and needs node inside the container, and workerd
+# (integration and SSR tests) needs glibc. Bun is installed on top.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: docker
+    container:
+      image: node:22-bookworm
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          # Full history, so commitlint can walk the commits of the push or the PR.
+          fetch-depth: 0
+      - uses: https://github.com/oven-sh/setup-bun@v2
+        with:
+          # Same Bun that wrote bun.lock, so --frozen-lockfile agrees with it.
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+
+      - name: Lint PR title
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$PR_TITLE" | bunx commitlint --verbose
+      - name: Lint PR commits
+        if: github.event_name == 'pull_request'
+        run: >-
+          bunx commitlint --verbose
+          --from ${{ github.event.pull_request.base.sha }}
+          --to ${{ github.event.pull_request.head.sha }}
+      - name: Lint pushed commits
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # A new branch (or the first push) has an all-zero "before"; lint just the head commit then.
+          if [ -z "${BEFORE//0/}" ]; then
+            bunx commitlint --verbose --last
+          else
+            bunx commitlint --verbose --from "$BEFORE" --to "$GITHUB_SHA"
+          fi
+
+      - name: Leak check (private denylist from the LEAK_DENYLIST secret; the repo is mirrored publicly)
+        env:
+          LEAK_DENYLIST: ${{ secrets.LEAK_DENYLIST }}
+        run: bun run leak-check
+      - name: Lint
+        run: bunx biome ci .
+      - name: Typecheck
+        run: bun run check
+      - name: Test (unit, integration in workerd, SSR against the built Worker)
+        run: bun run test
