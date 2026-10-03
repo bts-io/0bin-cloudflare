@@ -49,8 +49,9 @@ jobs:
         env:
           BEFORE: ${{ github.event.before }}
         run: |
-          # A new branch (or the first push) has an all-zero "before"; lint just the head commit then.
-          if [ -z "${BEFORE//0/}" ]; then
+          # A new branch has an all-zero "before", and after a force push "before" is no longer in the history;
+          # lint just the head commit in both cases.
+          if [ -z "${BEFORE//0/}" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
             bunx commitlint --verbose --last
           else
             bunx commitlint --verbose --from "$BEFORE" --to "$GITHUB_SHA"
