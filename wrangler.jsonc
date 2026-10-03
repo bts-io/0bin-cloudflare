@@ -35,11 +35,10 @@
 
   // CREATE_MODE gates POST /api/pastes and GET /api/stats: "off" answers 404, "open" lets anyone in, "access"
   // requires a Cloudflare Access JWT checked against ACCESS_TEAM_DOMAIN (https://<team>.cloudflareaccess.com)
-  // and ACCESS_AUD; either one empty in "access" mode means 401 for everyone. "token" requires
+  // and ACCESS_AUD (both secrets); either one missing in "access" mode means 401 for everyone. "token" requires
   // `Authorization: Bearer <CREATE_TOKEN>` (secret; unset means 401 for everyone).
   // /api/admin/*: in "access" mode the Access JWT, limited to ADMIN_EMAILS (comma list) when that is set; in any
   // other mode `Authorization: Bearer <ADMIN_TOKEN>` (secret), and without ADMIN_TOKEN the admin API answers 404.
-  // This instance runs "token" (a shared team key) until Zero Trust is set up; then "access" with the two
-  // ACCESS_* values filled in.
-  "vars": { "CREATE_MODE": "open", "ACCESS_TEAM_DOMAIN": "", "ACCESS_AUD": "", "ADMIN_EMAILS": "" }
+  // This instance runs "access"; its Access application only admits the team, so ADMIN_EMAILS stays empty.
+  "vars": { "CREATE_MODE": "access", "ADMIN_EMAILS": "" }
 }

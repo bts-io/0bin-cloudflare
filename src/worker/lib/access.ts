@@ -30,7 +30,7 @@ const keySet = (teamDomain: string) => {
  * Returns the token's `email` claim (empty string when it has none, e.g. a service token), or null when invalid.
  */
 async function verifyAccessJwt(token: string | undefined, env: Env): Promise<string | null> {
-  const teamDomain = env.ACCESS_TEAM_DOMAIN.replace(/\/+$/, "");
+  const teamDomain = (env.ACCESS_TEAM_DOMAIN ?? "").replace(/\/+$/, "");
   // Misconfigured access mode fails closed.
   if (!token || !teamDomain || !env.ACCESS_AUD) return null;
   try {

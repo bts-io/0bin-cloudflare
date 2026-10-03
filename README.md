@@ -41,9 +41,9 @@ The full design is in [`docs/spec.md`](docs/spec.md).
 | `off` | nobody (create answers 404) | `ADMIN_TOKEN` bearer, or off when unset |
 | `open` | anyone, rate limited per IP | `ADMIN_TOKEN` bearer, or off when unset |
 | `token` | whoever has the team key: the `CREATE_TOKEN` secret, entered once on the create page and kept in that browser | `ADMIN_TOKEN` bearer, or off when unset |
-| `access` | users signed in through Cloudflare Access (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`) | Access users, limited to `ADMIN_EMAILS` when set |
+| `access` | users signed in through Cloudflare Access | Access users, limited to `ADMIN_EMAILS` when set |
 
-Secrets are set with `bunx wrangler secret put CREATE_TOKEN` and `bunx wrangler secret put ADMIN_TOKEN`. With `access`, protect `/`, `/admin`, `POST /api/pastes`, `/api/stats` and `/api/admin/*` with an Access application and bypass `/p/*`, `/api/pastes/*`, `/assets/*` and `/api/health` (spec 7.3); the Worker verifies the Access JWT itself as well.
+Secrets are set with `bunx wrangler secret put <NAME>`: `CREATE_TOKEN` for `token`, `ADMIN_TOKEN` for admin outside `access`, and `ACCESS_TEAM_DOMAIN` (`https://<team>.cloudflareaccess.com`) plus `ACCESS_AUD` (the protected application's AUD tag) for `access`. With `access`, protect `/`, `/admin`, `POST /api/pastes`, `/api/stats` and `/api/admin/*` with an Access application and bypass `/p/*`, `/api/pastes/*`, `/assets/*` and `/api/health` (spec 7.3); the Worker verifies the Access JWT itself as well.
 
 Running `open` on the public internet invites abuse you cannot moderate: everything is encrypted. Prefer `token` or `access`.
 
@@ -75,6 +75,7 @@ bunx wrangler d1 create 0bin-cloudflare-db     # put the database_id it prints i
 # in wrangler.jsonc: change or remove the custom domain route, pick CREATE_MODE
 bunx wrangler secret put CREATE_TOKEN          # for CREATE_MODE=token
 bunx wrangler secret put ADMIN_TOKEN           # to enable /admin outside access mode
+bunx wrangler secret put ACCESS_TEAM_DOMAIN    # for CREATE_MODE=access, plus ACCESS_AUD
 bun run deploy                                 # migrations, build, wrangler deploy
 ```
 
