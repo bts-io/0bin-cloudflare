@@ -27,7 +27,7 @@ jobs:
       run:
         shell: bash
     env:
-      WORKER_URL: https://paste.borderless-tech.com
+      WORKER_URL: https://paste.h1n054ur.dev
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
     steps:
@@ -49,8 +49,7 @@ jobs:
           author=$(git log -1 --format=%an)
           bun run deploy -- --tag "$short" --message "forgejo run ${{ github.run_number }} by $author: $subject"
       - name: Smoke check (live view page and /api/health)
-        # A view page, not "/": behind Cloudflare Access the create page redirects to the login, while /p/* is
-        # public in every create mode and still proves server rendering works.
+        # A view page proves server rendering works whatever the create mode is.
         run: |
           for i in $(seq 1 24); do
             view=$(curl -s -o /dev/null -w '%{http_code}' "$WORKER_URL/p/smokecheck00" || true)

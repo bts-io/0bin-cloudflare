@@ -6,7 +6,7 @@ import { z } from "zod";
 import { CreatePasteBody, EXPIRY_MS, Id, Token } from "../../shared/schemas/paste";
 import { getDb } from "../db";
 import { counters, pastes } from "../db/schema";
-import { type AuthEnv, createGate } from "../lib/access";
+import { createGate } from "../lib/auth";
 import { fail, notFound } from "../lib/http";
 import { createRateLimit } from "../lib/rate-limit";
 import { decodedLength, randomB64u, sha256Hex, versionByte } from "../lib/tokens";
@@ -40,7 +40,7 @@ const isIdConflict = (err: unknown): boolean =>
   (err.message.includes("UNIQUE constraint failed: pastes.id") || isIdConflict(err.cause));
 
 /** Paste routes (spec 5.1-5.4). Mounted at /api/pastes. */
-export const pasteRoutes = new Hono<AuthEnv>()
+export const pasteRoutes = new Hono<{ Bindings: Env }>()
   // Registered before the header middleware so a disabled create is byte-for-byte an unknown route.
   .post("/", createGate)
   .use("*", async (c, next) => {

@@ -3,10 +3,10 @@ import { Hono } from "hono";
 import type { Stats } from "../../shared/schemas/stats";
 import { getDb } from "../db";
 import { counters } from "../db/schema";
-import { type AuthEnv, createGate } from "../lib/access";
+import { createGate } from "../lib/auth";
 
 /** Create-page footer counter (spec 5.6), behind the same gate as create. Mounted at /api/stats. */
-export const statsRoutes = new Hono<AuthEnv>().get("/", createGate, async (c) => {
+export const statsRoutes = new Hono<{ Bindings: Env }>().get("/", createGate, async (c) => {
   const [row] = await getDb(c.env.DB)
     .select({ value: counters.value })
     .from(counters)

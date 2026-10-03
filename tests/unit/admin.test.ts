@@ -56,7 +56,7 @@ describe("parsePasteRef", () => {
 });
 
 describe("bearerHeaders", () => {
-  it("sends nothing without a token (Access cookie mode)", () => {
+  it("sends nothing without a token", () => {
     expect(bearerHeaders(null)).toEqual({});
   });
 

@@ -29,7 +29,7 @@ const BLOCKED: Partial<Record<Phase, string>> = {
 
 /**
  * Admin page (spec 8.3). The server renders only the frame and "loading admin"; the token is read and every
- * call made after mount. With Cloudflare Access the cookie authenticates; in token mode a 401 asks for the token.
+ * call made after mount; a 401 asks for the admin token.
  */
 export function AdminPage() {
   const [phase, setPhase] = useState<Phase>("loading");

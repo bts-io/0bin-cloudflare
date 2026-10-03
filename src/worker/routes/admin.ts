@@ -12,7 +12,7 @@ import {
 import { Id } from "../../shared/schemas/paste";
 import { getDb } from "../db";
 import { counters, pastes } from "../db/schema";
-import { type AuthEnv, adminGate } from "../lib/access";
+import { adminGate } from "../lib/auth";
 import { fail, notFound } from "../lib/http";
 import { purgeExpired } from "../lib/purge";
 
@@ -30,7 +30,7 @@ const afterCursor = (cursor: string): SQL | undefined => {
 };
 
 /** Admin API (spec 5.7). Mounted at /api/admin; every route sits behind `adminGate`. */
-export const adminRoutes = new Hono<AuthEnv>()
+export const adminRoutes = new Hono<{ Bindings: Env }>()
   .use("*", adminGate)
   .get(
     "/pastes",

@@ -81,7 +81,7 @@ export function adminFailure(err: unknown): "token" | "forbidden" | "disabled" |
   return "failed";
 }
 
-/** With Cloudflare Access the cookie authenticates and no header is sent; token mode adds the bearer. */
+/** Every admin call carries the admin token as a bearer. */
 const adminCall = <T extends z.ZodType>(schema: T, path: string, token: string | null, method = "GET") =>
   call(schema, path, { method, headers: bearerHeaders(token) });
 

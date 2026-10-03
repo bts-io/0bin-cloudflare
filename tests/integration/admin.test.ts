@@ -2,10 +2,8 @@ import { createExecutionContext, env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
 import { AdminPasteList, AdminPurgeResult, AdminStats } from "../../src/shared/schemas/admin";
 import worker from "../../src/worker/index";
-import { accessVars, setupAccessKeys } from "./access-keys";
 import { counter, createPaste, ORIGIN, resetDb, row } from "./helpers";
 
-const { sign } = setupAccessKeys();
 beforeEach(resetDb);
 
 const ADMIN_TOKEN = "admin-secret-for-tests";
@@ -57,7 +55,7 @@ describe("admin auth", () => {
     }
   });
 
-  describe("token (any mode but access)", () => {
+  describe("token", () => {
     it.each([
       ["no header", {}],
       ["a wrong token", { authorization: "Bearer nope" }],
@@ -84,38 +82,6 @@ describe("admin auth", () => {
     it("does not accept CREATE_TOKEN as an admin token", async () => {
       const vars = { CREATE_MODE: "token", CREATE_TOKEN: "create-only", ADMIN_TOKEN };
       expect((await call("/stats", vars, { authorization: "Bearer create-only" })).status).toBe(401);
-    });
-  });
-
-  describe("access mode", () => {
-    const jwt = async (claims = {}) => ({ "cf-access-jwt-assertion": await sign(claims) });
-
-    it("answers 401 without a valid JWT, even with ADMIN_TOKEN", async () => {
-      expect((await call("/stats", { ...accessVars, ADMIN_TOKEN }, auth)).status).toBe(401);
-      expect((await call("/stats", accessVars, await jwt({ aud: "other-app" }))).status).toBe(401);
-      expect((await call("/stats", { ...accessVars, ACCESS_AUD: "" }, await jwt())).status).toBe(401);
-    });
-
-    it("answers 403 when the email is not in ADMIN_EMAILS", async () => {
-      const vars = { ...accessVars, ADMIN_EMAILS: "boss@example.com, ops@example.com" };
-      for (const [method, path] of routes) {
-        const res = await call(path, vars, await jwt({ email: "someone@example.com" }), method);
-        expect(res.status).toBe(403);
-        expect(res.headers.get("cache-control")).toBe("no-store");
-        expect(await res.json()).toEqual({ error: "forbidden", message: "Forbidden" });
-      }
-      expect((await call("/stats", vars, await jwt({ email: undefined }))).status).toBe(403);
-    });
-
-    it("answers 200 when the email is listed, ignoring case and spaces", async () => {
-      const vars = { ...accessVars, ADMIN_EMAILS: " Boss@Example.com ,ops@example.com" };
-      expect((await call("/stats", vars, await jwt({ email: "boss@example.COM" }))).status).toBe(200);
-      expect((await call("/stats", vars, await jwt({ email: "ops@example.com" }))).status).toBe(200);
-    });
-
-    it("answers 200 for any authenticated user when ADMIN_EMAILS is empty", async () => {
-      expect((await call("/stats", { ...accessVars, ADMIN_EMAILS: "" }, await jwt())).status).toBe(200);
-      expect((await call("/stats", { ...accessVars, ADMIN_EMAILS: " , " }, await jwt())).status).toBe(200);
     });
   });
 });

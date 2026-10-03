@@ -1,10 +1,8 @@
 import { createExecutionContext, env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
 import worker from "../../src/worker/index";
-import { accessVars, setupAccessKeys } from "./access-keys";
 import { blob, counter, ORIGIN, postPaste, randomIp, resetDb, token } from "./helpers";
 
-const { sign } = setupAccessKeys();
 beforeEach(resetDb);
 
 const valid = () => ({ ciphertext: blob(), kind: "text", readToken: token() });
@@ -44,31 +42,6 @@ describe("CREATE_LIMITER (local simulator, 10 per 60 s)", () => {
     expect(statuses).toEqual([...Array(10).fill(201), 429]);
     expect(await counter()).toBe(10);
     expect((await postPaste(valid())).status).toBe(201);
-  });
-
-  it("keys by Access email in access mode, whatever the IP", async () => {
-    const post = (jwt: string) =>
-      worker.fetch(
-        new Request(`${ORIGIN}/api/pastes`, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "cf-connecting-ip": randomIp(),
-            "cf-access-jwt-assertion": jwt,
-          },
-          body: JSON.stringify(valid()),
-        }),
-        { ...env, ...accessVars },
-        createExecutionContext(),
-      );
-    const statuses = await inOneWindow(async () => {
-      const jwt = await sign({ email: `${crypto.randomUUID()}@example.com` });
-      const out: number[] = [];
-      for (let i = 0; i < 11; i++) out.push((await post(jwt)).status);
-      return out;
-    });
-    expect(statuses).toEqual([...Array(10).fill(201), 429]);
-    expect((await post(await sign({ email: `${crypto.randomUUID()}@example.com` }))).status).toBe(201);
   });
 });
 
@@ -116,22 +89,11 @@ describe("limiter key and placement (recording limiter)", () => {
     expect(keys).toEqual(["create:ip:198.51.100.9"]);
   });
 
-  it("uses create:<email> from the verified JWT in access mode", async () => {
-    const { keys, limiter } = recorder(true);
-    const res = await post(
-      { ...accessVars, CREATE_LIMITER: limiter },
-      {
-        "cf-connecting-ip": "203.0.113.7",
-        "cf-access-jwt-assertion": await sign({ email: "Ann@Example.com" }),
-      },
-    );
-    expect(res.status).toBe(201);
-    expect(keys).toEqual(["create:ann@example.com"]);
-  });
-
   it("runs after the gate: a rejected request is not counted", async () => {
     const { keys, limiter } = recorder(true);
-    expect((await post({ ...accessVars, CREATE_LIMITER: limiter }, {})).status).toBe(401);
+    expect(
+      (await post({ CREATE_MODE: "token", CREATE_TOKEN: "t0ken", CREATE_LIMITER: limiter }, {})).status,
+    ).toBe(401);
     expect((await post({ CREATE_MODE: "off", CREATE_LIMITER: limiter }, {})).status).toBe(404);
     expect(keys).toEqual([]);
   });

@@ -1,11 +1,13 @@
 # 0bin-cloudflare: design spec
 
 Client-side encrypted pastebin. A rewrite of [0bin](https://github.com/Tygs/0bin) (Python/Bottle, unmaintained) as one Cloudflare Worker.
-Host: `paste.borderless-tech.com`. License: MIT. Inventory taken from 0bin `master` (shallow clone, 2026-10-03).
+Host: `paste.h1n054ur.dev`. License: MIT. Inventory taken from 0bin `master` (shallow clone, 2026-10-03).
 
 Fixed decisions (not reopened here): Worker; Hono on `/api/*`; TanStack Start (React 19) + Tailwind v4 for pages; Zod; D1 + Drizzle; cron purge; WebCrypto AES-GCM (no SJCL, no old-link compatibility); key only in the URL `#fragment`; create + admin behind Cloudflare Access, view needs only the link; Worker verifies `Cf-Access-Jwt-Assertion` on create and admin; Workers rate-limit binding (namespace `5001`) on create; Access gate optional via config for self-hosters.
 
 ---
+
+> **Since 0.2.0 Cloudflare Access is removed.** Create modes are `off`, `open` and `token`, and admin uses `ADMIN_TOKEN` only; the Access parts below (5.7 auth, 7.3, 7.4 `ACCESS_*`/`ADMIN_EMAILS`, the Access sequence diagram) are kept as design history.
 
 ## 1. 0bin feature inventory
 
@@ -169,7 +171,7 @@ wire     = base64url(blob), no padding
 - **Compression is justified**: native API, no library, text shrinks 3-5x so the effective paste limit rises well above 1 MiB. No compression oracle risk: one author, one secret, no attacker-controlled data mixed in. Viewer inflates with a 16 MiB output cap (bomb guard).
 - **Why the IV is safe to store**: GCM requires IV uniqueness per key, not secrecy. Every paste has a fresh random key and exactly one encryption under it, so IV reuse is impossible; the IV is public by design.
 - **Why the read token**: the server can demand proof of key knowledge without learning the key (HKDF output with a different `info` is independent of the encryption key). Effects: someone holding only the id (admin list, logs, a truncated link) cannot fetch or burn a paste; a mistyped key cannot burn it either.
-- URL format: `https://paste.borderless-tech.com/p/<id>#<ikm>`. Browsers do not send fragments in requests or `Referer`; pages also send `Referrer-Policy: no-referrer`.
+- URL format: `https://paste.h1n054ur.dev/p/<id>#<ikm>`. Browsers do not send fragments in requests or `Referer`; pages also send `Referrer-Policy: no-referrer`.
 - Main threat is XSS stealing `location.hash`: strict CSP (`script-src 'self'` + nonce if Start emits inline scripts, `connect-src 'self'`, `frame-ancestors 'none'`, `base-uri 'none'`), no third-party scripts, no analytics or error reporters that capture URLs.
 - No compatibility with 0bin SJCL links.
 
@@ -344,7 +346,7 @@ Newest first, cap 50, entries past `expiresAt` pruned on load, entry removed on 
 | `/assets/*`, `/favicon.ico`, `/robots.txt` | **Bypass** | none |
 | `/api/health` | **Bypass** | none |
 
-Setup: one Access application on `paste.borderless-tech.com` (allow policy, e.g. your organisation's email domain), plus one application with a **Bypass / Everyone** policy listing the bypass paths. Caveats:
+Setup: one Access application on `paste.h1n054ur.dev` (allow policy, e.g. your organisation's email domain), plus one application with a **Bypass / Everyone** policy listing the bypass paths. Caveats:
 - Access path rules are not method-aware: the `/api/pastes/*` bypass also covers `DELETE`, which is fine (owner token).
 - `/api/pastes/*` must not match create at `/api/pastes`. Phase 3 verifies with an unauthenticated `curl -X POST /api/pastes` (expect Access redirect/403); the Worker JWT check returns 401 regardless.
 - View-page JS/CSS must all live under `/assets/*`.
@@ -370,7 +372,7 @@ sequenceDiagram
     participant A as Cloudflare Access edge
     participant W as Worker
     participant J as Access JWKS
-    U->>A: request paste.borderless-tech.com/path
+    U->>A: request paste.h1n054ur.dev/path
     alt path matches bypass app
         A->>W: forward without JWT
         W-->>U: public handler (token checks only)

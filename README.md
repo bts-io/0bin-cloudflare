@@ -1,6 +1,6 @@
 # 0bin-cloudflare
 
-A client-side encrypted pastebin on one Cloudflare Worker. Text and files are encrypted in your browser before they leave, and the key never reaches the server, so the server stores only ciphertext it cannot read. It is a rewrite of [0bin](https://github.com/Tygs/0bin) (Python, no longer maintained), which itself followed sebsauvage's [ZeroBin](https://github.com/sebsauvage/ZeroBin), the original idea. Live at https://paste.borderless-tech.com.
+A client-side encrypted pastebin on one Cloudflare Worker. Text and files are encrypted in your browser before they leave, and the key never reaches the server, so the server stores only ciphertext it cannot read. It is a rewrite of [0bin](https://github.com/Tygs/0bin) (Python, no longer maintained), which itself followed sebsauvage's [ZeroBin](https://github.com/sebsauvage/ZeroBin), the original idea. Live at https://paste.h1n054ur.dev.
 
 ## Features
 
@@ -8,7 +8,7 @@ A client-side encrypted pastebin on one Cloudflare Worker. Text and files are en
 - Expiry: 1 hour, 1 day, 1 week, 1 month or never. Burn after reading: the paste is deleted by the one read that opens it.
 - The creator's browser keeps a "my pastes" list with an owner token, so the creator can reopen a burn paste without burning it and delete any of their pastes.
 - Admin page (`/admin`): stats, list, delete by link or id, purge expired now.
-- Creating can be closed, open, behind a shared team key, or behind Cloudflare Access (see [Create modes](#create-modes)).
+- Creating can be closed, open, or behind a shared team key (see [Create modes](#create-modes)).
 - Rate limit on create (10 per minute per user or IP), strict CSP with a per-request nonce, `Referrer-Policy: no-referrer`.
 
 ## How it works
@@ -41,11 +41,10 @@ The full design is in [`docs/spec.md`](docs/spec.md).
 | `off` | nobody (create answers 404) | `ADMIN_TOKEN` bearer, or off when unset |
 | `open` | anyone, rate limited per IP | `ADMIN_TOKEN` bearer, or off when unset |
 | `token` | whoever has the team key: the `CREATE_TOKEN` secret, entered once on the create page and kept in that browser | `ADMIN_TOKEN` bearer, or off when unset |
-| `access` | users signed in through Cloudflare Access | Access users, limited to `ADMIN_EMAILS` when set |
 
-Secrets are set with `bunx wrangler secret put <NAME>`: `CREATE_TOKEN` for `token`, `ADMIN_TOKEN` for admin outside `access`, and `ACCESS_TEAM_DOMAIN` (`https://<team>.cloudflareaccess.com`) plus `ACCESS_AUD` (the protected application's AUD tag) for `access`. With `access`, protect `/`, `/admin`, `POST /api/pastes`, `/api/stats` and `/api/admin/*` with an Access application and bypass `/p/*`, `/api/pastes/*`, `/assets/*` and `/api/health` (spec 7.3); the Worker verifies the Access JWT itself as well.
+Secrets are set with `bunx wrangler secret put <NAME>`: `CREATE_TOKEN` for `token`, `ADMIN_TOKEN` to enable the admin page.
 
-Running `open` on the public internet invites abuse you cannot moderate: everything is encrypted. Prefer `token` or `access`.
+Running `open` on the public internet invites abuse you cannot moderate: everything is encrypted. Prefer `token` unless you watch it.
 
 ## Develop
 
@@ -74,8 +73,7 @@ export CLOUDFLARE_ACCOUNT_ID=<your account id>
 bunx wrangler d1 create 0bin-cloudflare-db     # put the database_id it prints in wrangler.jsonc
 # in wrangler.jsonc: change or remove the custom domain route, pick CREATE_MODE
 bunx wrangler secret put CREATE_TOKEN          # for CREATE_MODE=token
-bunx wrangler secret put ADMIN_TOKEN           # to enable /admin outside access mode
-bunx wrangler secret put ACCESS_TEAM_DOMAIN    # for CREATE_MODE=access, plus ACCESS_AUD
+bunx wrangler secret put ADMIN_TOKEN           # to enable /admin
 bun run deploy                                 # migrations, build, wrangler deploy
 ```
 
