@@ -10,7 +10,12 @@ export const Route = createRootRoute({
       { title: "0bin" },
       { name: "description", content: "Client-side encrypted pastebin." },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+    ],
   }),
   component: RootDocument,
   notFoundComponent: NotFound,
