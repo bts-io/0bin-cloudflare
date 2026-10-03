@@ -48,12 +48,14 @@ jobs:
           subject=$(git log -1 --format=%s | cut -c1-60)
           author=$(git log -1 --format=%an)
           bun run deploy -- --tag "$short" --message "forgejo run ${{ github.run_number }} by $author: $subject"
-      - name: Smoke check (live / and /api/health)
+      - name: Smoke check (live view page and /api/health)
+        # A view page, not "/": behind Cloudflare Access the create page redirects to the login, while /p/* is
+        # public in every create mode and still proves server rendering works.
         run: |
           for i in $(seq 1 24); do
-            home=$(curl -s -o /dev/null -w '%{http_code}' "$WORKER_URL/" || true)
+            view=$(curl -s -o /dev/null -w '%{http_code}' "$WORKER_URL/p/smokecheck00" || true)
             health=$(curl -s -o /dev/null -w '%{http_code}' "$WORKER_URL/api/health" || true)
-            [ "$home" = 200 ] && [ "$health" = 200 ] && { echo "live: / -> $home, /api/health -> $health"; exit 0; }
+            [ "$view" = 200 ] && [ "$health" = 200 ] && { echo "live: /p/... -> $view, /api/health -> $health"; exit 0; }
             sleep 5
           done
-          echo "live Worker is not healthy: / -> $home, /api/health -> $health"; exit 1
+          echo "live Worker is not healthy: /p/... -> $view, /api/health -> $health"; exit 1

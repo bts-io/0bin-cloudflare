@@ -65,7 +65,7 @@ bun run verify         # biome ci, typecheck, unit + integration (workerd) + SSR
 
 ## Deploy
 
-This instance deploys from Forgejo Actions on every push to `main` (`.forgejo/workflows/deploy.yml`): `bun run deploy` applies D1 migrations, builds and runs `wrangler deploy`, then a smoke check hits `/` and `/api/health`. CI (`.forgejo/workflows/ci.yml`) lints commit messages, runs a leak check, lints, typechecks and tests every push and pull request.
+This instance deploys from Forgejo Actions on every push to `main` (`.forgejo/workflows/deploy.yml`): `bun run deploy` applies D1 migrations, builds and runs `wrangler deploy`, then a smoke check hits a view page and `/api/health`. CI (`.forgejo/workflows/ci.yml`) lints commit messages, runs a leak check, lints, typechecks and tests every push and pull request.
 
 To run your own copy on your Cloudflare account:
 
